@@ -71,7 +71,7 @@ Each group is one claim against revisions of one page:
 depending on which revision you read, and a claim-only predictor has to give them all one
 answer.
 
-## What the FEVER number does and does not mean
+## About the FEVER number
 
 **It is not evidence that FEVER models take shortcuts.** It is an upper bound on a
 hypothesis class, not a measurement of any model.
