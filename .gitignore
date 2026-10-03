@@ -1,4 +1,4 @@
-# 75 MB of parquet across two corpora. scripts/fetch_data.py pulls it back.
+# ~95 MB of parquet across two corpora. scripts/fetch_data.py pulls it back.
 data/*.parquet
 data/fever/*.parquet
 
@@ -7,3 +7,5 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 .ruff_cache/
+*.parquet.part
+data/fever/*.parquet.part

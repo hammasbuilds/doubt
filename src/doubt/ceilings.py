@@ -65,7 +65,15 @@ class Ceiling:
         return self.rows - self.correct
 
 
+def _require_rows(rows) -> list:
+    rows = list(rows)
+    if not rows:
+        raise ValueError("no rows: a ceiling over an empty set is undefined")
+    return rows
+
+
 def ceiling(rows, key: Callable, name: str = "") -> Ceiling:
+    rows = _require_rows(rows)
     grouped: dict[object, Counter] = defaultdict(Counter)
     for row in rows:
         grouped[key(row)][row.label] += 1
@@ -80,11 +88,13 @@ def ceiling(rows, key: Callable, name: str = "") -> Ceiling:
 
 def majority(rows) -> float:
     """Always predict the commonest label. The floor everything is measured from."""
+    rows = _require_rows(rows)
     counts = Counter(row.label for row in rows)
     return counts.most_common(1)[0][1] / len(rows)
 
 
 def label_mix(rows) -> dict[str, float]:
+    rows = _require_rows(rows)
     counts = Counter(row.label for row in rows)
     return {label: counts[label] / len(rows) for label in LABELS}
 

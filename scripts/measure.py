@@ -10,6 +10,7 @@ classifier happened to be.
 from __future__ import annotations
 
 import sys
+from collections import Counter, defaultdict
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
@@ -35,7 +36,7 @@ def the_corpora() -> None:
                   f"{mix[corpus.SUPPORTS]:>11.1%}{mix[corpus.REFUTES]:>10.1%}"
                   f"{mix[corpus.NOT_ENOUGH_INFO]:>9.1%}")
         if not have[source]:
-            print(f"{source:<12}not downloaded — run scripts/fetch_data.py")
+            print(f"{source:<12}not downloaded - run scripts/fetch_data.py")
 
 
 def the_ceilings() -> None:
@@ -60,7 +61,10 @@ def the_ceilings() -> None:
 
 
 def the_structure() -> None:
-    rule("why VitaminC has no room to leak")
+    rule("why VitaminC has no room to leak (train split)")
+    if "train" not in corpus.available()[corpus.VITAMINC]:
+        print("vitaminc/train not downloaded - run scripts/fetch_data.py")
+        return
     rows = corpus.load(corpus.VITAMINC, "train")
     shapes = ceilings.group_shapes(rows)
     print(f"{'rows in group':>14}{'labels spanned':>16}{'groups':>10}")
@@ -74,6 +78,30 @@ def the_structure() -> None:
     print("    Wikipedia page. Most hold four rows across two labels, so the same")
     print("    claim is both true and false depending on which revision you read.")
     print("    A claim-only predictor has to give them all one answer.")
+
+
+def the_repeats() -> None:
+    rule("repeated claims, and claims shared across splits")
+    have = corpus.available()
+    for source in (corpus.VITAMINC, corpus.FEVER):
+        if not {"train", "test"} <= set(have[source]):
+            print(f"\n{source}: train and test needed - run scripts/fetch_data.py")
+            continue
+        test = corpus.load(source, "test")
+        per_claim = Counter(r.claim for r in test)
+        shared = sum(n for n in per_claim.values() if n > 1)
+        train_labels: dict[str, set[str]] = defaultdict(set)
+        for r in corpus.load(source, "train"):
+            train_labels[r.claim].add(r.label)
+        seen = [c for c in per_claim if c in train_labels]
+        consistent = sum(1 for c in seen if len(train_labels[c]) == 1)
+        overlap_rows = sum(per_claim[c] for c in seen)
+        print(f"\n{source} / test")
+        print(f"  distinct claims                  {len(per_claim):>8,} over {len(test):,} rows")
+        print(f"  rows sharing a claim             {shared:>8,}   {shared / len(test):.1%}")
+        print(f"  test claims also in train        {len(seen):>8,}   "
+              f"({overlap_rows / len(test):.1%} of test rows)")
+        print(f"  ... with one consistent train label {consistent:>5,}")
 
 
 def the_third_label() -> None:
@@ -103,6 +131,7 @@ def main() -> None:
     the_corpora()
     the_ceilings()
     the_structure()
+    the_repeats()
     the_third_label()
     print()
 

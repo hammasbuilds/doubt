@@ -9,7 +9,7 @@ then labelled. A claim appears once, with one label.
 
 **VitaminC** pairs each claim with *revisions* of the same Wikipedia page, so
 the same claim appears against evidence that supports it and evidence that does
-not. 73,404 of its 112,426 case groups contain four rows.
+not. 73,401 of its 112,426 training case groups contain four rows.
 
 That construction is meant to stop a model scoring well by reading the claim and
 ignoring the evidence. `ceilings.py` measures whether it worked, exactly rather
@@ -18,11 +18,22 @@ than by training something.
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
-DATA = Path(__file__).resolve().parents[2] / "data"
+DEFAULT_DATA = Path(__file__).resolve().parents[2] / "data"
+
+
+def data_dir() -> Path:
+    """Where the corpora live: ``$DOUBT_DATA`` if set, else ``<repo>/data``.
+
+    Read on every call, so setting the variable after import still takes effect.
+    VitaminC sits at the top level, FEVER in a ``fever/`` subfolder.
+    """
+    override = os.environ.get("DOUBT_DATA")
+    return Path(override).expanduser() if override else DEFAULT_DATA
 
 SUPPORTS = "SUPPORTS"
 REFUTES = "REFUTES"
@@ -61,11 +72,12 @@ class Claim:
 
 
 def _path(source: str, split: str) -> Path:
-    return DATA / f"{split}.parquet" if source == VITAMINC else DATA / "fever" / f"{split}.parquet"
+    root = data_dir()
+    return root / f"{split}.parquet" if source == VITAMINC else root / "fever" / f"{split}.parquet"
 
 
-@lru_cache(maxsize=8)
 def load(source: str = VITAMINC, split: str = "train") -> tuple[Claim, ...]:
+    """One split of one corpus, as `Claim` rows. Cached per file path."""
     if source not in (VITAMINC, FEVER):
         raise ValueError(f"unknown source {source!r}")
     if split not in SPLITS:
@@ -75,9 +87,14 @@ def load(source: str = VITAMINC, split: str = "train") -> tuple[Claim, ...]:
     if not path.exists():
         raise CorpusMissingError(
             f"{path} is missing. Run scripts/fetch_data.py, which pulls both "
-            "corpora from their HuggingFace parquet conversions."
+            "corpora from their HuggingFace parquet conversions (set DOUBT_DATA "
+            "to keep them elsewhere)."
         )
+    return _load(str(path), source)
 
+
+@lru_cache(maxsize=8)
+def _load(path: str, source: str) -> tuple[Claim, ...]:
     import pyarrow.parquet as pq
 
     rows = pq.read_table(path).to_pylist()

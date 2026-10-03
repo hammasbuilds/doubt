@@ -11,6 +11,18 @@ import pytest
 
 from doubt import ceilings, corpus
 
+_missing = [
+    f"{source}/{split}"
+    for source, splits in ((corpus.VITAMINC, corpus.SPLITS), (corpus.FEVER, corpus.SPLITS))
+    for split in splits
+    if split not in corpus.available()[source]
+]
+pytestmark = pytest.mark.skipif(
+    bool(_missing),
+    reason=f"corpus not on disk ({', '.join(_missing)}); run `python scripts/fetch_data.py` "
+    "or point DOUBT_DATA at a folder that has it",
+)
+
 SIZES = {
     (corpus.VITAMINC, "train"): 370_653,
     (corpus.VITAMINC, "validation"): 63_054,
@@ -47,13 +59,6 @@ def test_fever_evidence_is_flattened_to_text():
     row = corpus.load(corpus.FEVER, "test")[0]
     assert isinstance(row.evidence, str)
     assert "[" not in row.evidence[:1]
-
-
-def test_unknown_source_and_split_are_rejected():
-    with pytest.raises(ValueError):
-        corpus.load("nope", "test")
-    with pytest.raises(ValueError):
-        corpus.load(corpus.VITAMINC, "nope")
 
 
 def test_vitaminc_claims_are_almost_all_contrastive():

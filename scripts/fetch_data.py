@@ -8,16 +8,23 @@ benchmark built to forbid claim-only shortcuts and one that was not.
 Fetched in byte ranges and checked against Content-Length, because a single GET
 of a 40 MB file over this link truncates often enough to matter, and a short
 parquet fails later and less clearly than it should.
+
+Each file is written to ``<name>.parquet.part`` and renamed only once its size
+matches Content-Length, so an interrupted run never leaves a short parquet
+behind; re-running resumes the ``.part`` from where it stopped.
+
+Set ``DOUBT_DATA`` to download somewhere other than ``<repo>/data``.
 """
 
 from __future__ import annotations
 
+import os
 import sys
 import urllib.error
 import urllib.request
 from pathlib import Path
 
-DATA = Path(__file__).resolve().parents[1] / "data"
+DATA = Path(os.environ.get("DOUBT_DATA") or Path(__file__).resolve().parents[1] / "data")
 SPLITS = ("train", "validation", "test")
 CHUNK = 4_000_000
 
@@ -53,9 +60,14 @@ def fetch(url: str, out: Path) -> None:
         print(f"  {out.name} already complete ({total / 1e6:.0f} MB)")
         return
 
-    print(f"  {out.name}  {total / 1e6:.0f} MB ", end="", flush=True)
-    written = 0
-    with out.open("wb") as handle:
+    part = out.with_name(out.name + ".part")
+    written = part.stat().st_size if part.exists() else 0
+    if written > total:
+        part.unlink()
+        written = 0
+    resumed = f", resuming at {written / 1e6:.0f} MB" if written else ""
+    print(f"  {out.name}  {total / 1e6:.0f} MB{resumed} ", end="", flush=True)
+    with part.open("ab") as handle:
         while written < total:
             end = min(written + CHUNK, total) - 1
             request = urllib.request.Request(
@@ -63,9 +75,12 @@ def fetch(url: str, out: Path) -> None:
             )
             try:
                 with urllib.request.urlopen(request, timeout=300) as response:
+                    if response.status != 206 and written:
+                        raise OSError(f"{out.name}: server ignored the byte range")
                     block = response.read()
             except (urllib.error.URLError, TimeoutError, OSError) as exc:
                 print(f"\n    failed at byte {written:,}: {exc}")
+                print("    re-run scripts/fetch_data.py to resume from here")
                 raise
             if not block:
                 raise OSError(f"{out.name}: empty response at byte {written:,}")
@@ -73,10 +88,11 @@ def fetch(url: str, out: Path) -> None:
             written += len(block)
             print(".", end="", flush=True)
 
-    got = out.stat().st_size
+    got = part.stat().st_size
     if got != total:
-        out.unlink()
+        part.unlink()
         raise OSError(f"{out.name}: got {got:,} bytes, expected {total:,}. Removed.")
+    os.replace(part, out)
     print(" ok")
 
 
