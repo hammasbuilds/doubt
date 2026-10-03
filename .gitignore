@@ -9,3 +9,4 @@ __pycache__/
 .ruff_cache/
 *.parquet.part
 data/fever/*.parquet.part
+*.egg-info/

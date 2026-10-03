@@ -35,10 +35,29 @@ same claim appears against evidence that supports it and evidence that does not.
 claims were written once against one sentence.
 
 ```
-python scripts/fetch_data.py   # ~75 MB across both corpora, not in git
+pip install -e ".[dev]"
+python demo.py                 # the bound on hand-built rows; real corpora if fetched
+python scripts/fetch_data.py   # ~95 MB across both corpora, not in git
 python scripts/measure.py      # every table below
-python -m pytest               # 28 tests
+python -m pytest               # 44 tests; 16 need the corpora and skip without them
 ```
+
+`fetch_data.py` downloads in byte ranges to `*.parquet.part` and renames only when the
+size matches, so an interrupted run resumes where it stopped. Set `DOUBT_DATA` to keep the
+corpora somewhere other than `./data` (VitaminC at the top level, FEVER in `fever/`).
+
+### Your own data
+
+```
+doubt my_claims.csv                      # columns: claim, evidence, label
+doubt my_claims.jsonl --claim-col q --label-col y --json
+doubt --corpus vitaminc --split test     # the fetched corpora
+```
+
+Reads csv, tsv, jsonl, json (a list of objects) and parquet; labels can be any strings.
+It prints the majority floor, the claim-only ceiling, the leak between them, the
+evidence-only ceiling, and how many rows contradict an identical claim/evidence pair.
+`--json` gives the same numbers for scripts. `python -m doubt` works too.
 
 ## The bound
 
@@ -56,7 +75,7 @@ nothing you did not already know from the label prior.
 
 ## Why VitaminC has no room
 
-Each group is one claim against revisions of one page:
+Each group is one claim against revisions of one page (train split):
 
 | Rows in group | Labels spanned | Groups |
 |---:|---:|---:|
@@ -80,8 +99,9 @@ It is also not an artefact of unique claims. FEVER's test claims repeat — 9,85
 claims over 16,039 rows, 66% of rows sharing a claim with another — and the repeats
 essentially always carry the same label. So grouping by claim still reaches 0.999.
 
-Nor is it memorisation across splits. **0.1% of test claims appear in train** in both
-corpora, and in VitaminC not one of those 74 carries a single consistent training label.
+Nor is it memorisation across splits. **0.1% of test rows have a claim that appears in
+train** in both corpora (23 claims in VitaminC, 2 in FEVER), and in VitaminC not one of
+those 23 carries a single consistent training label.
 
 What it means is narrower and, I think, more interesting: **a claim-only function could in
 principle be nearly perfect on FEVER, and provably cannot be on VitaminC.** FEVER cannot
@@ -104,9 +124,11 @@ repository is named after.
 ## Layout
 
 ```
-scripts/fetch_data.py       both corpora, byte-ranged and length-checked
+demo.py                     the bound on hand-built rows, then the real test splits
+scripts/fetch_data.py       both corpora, byte-ranged, resumable, length-checked
 src/doubt/corpus.py         VitaminC and FEVER loaded into one shape
 src/doubt/ceilings.py       the exact bound, and the group-shape analysis
+src/doubt/cli.py            `doubt` on your own csv/jsonl/parquet, text or JSON
 scripts/measure.py          every table above
-tests/                      28 tests; the bound is checked on hand-built cases
+tests/                      44 tests; the bound is checked on hand-built cases
 ```
