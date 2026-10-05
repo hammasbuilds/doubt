@@ -132,3 +132,8 @@ src/doubt/cli.py            `doubt` on your own csv/jsonl/parquet, text or JSON
 scripts/measure.py          every table above
 tests/                      44 tests; the bound is checked on hand-built cases
 ```
+
+## Licence
+
+Code: MIT, see [LICENSE](LICENSE). No dataset is committed; the fetch script downloads
+each source under its own terms.
