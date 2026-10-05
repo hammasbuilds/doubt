@@ -108,9 +108,7 @@ def group_shapes(rows) -> Counter:
     grouped: dict[str, list] = defaultdict(list)
     for row in rows:
         grouped[row.group].append(row)
-    return Counter(
-        (len(members), len({m.label for m in members})) for members in grouped.values()
-    )
+    return Counter((len(members), len({m.label for m in members})) for members in grouped.values())
 
 
 def leak(rows) -> float:

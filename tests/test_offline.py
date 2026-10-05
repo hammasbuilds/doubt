@@ -41,8 +41,15 @@ def test_a_part_file_is_not_reported_as_available(empty_data):
     assert corpus.available()[corpus.VITAMINC] == []
 
 
-@pytest.mark.parametrize("fn", [ceilings.majority, ceilings.label_mix, ceilings.leak,
-                                lambda rows: ceilings.ceiling(rows, ceilings.by_claim)])
+@pytest.mark.parametrize(
+    "fn",
+    [
+        ceilings.majority,
+        ceilings.label_mix,
+        ceilings.leak,
+        lambda rows: ceilings.ceiling(rows, ceilings.by_claim),
+    ],
+)
 def test_empty_rows_raise_a_clear_error(fn):
     with pytest.raises(ValueError, match="no rows"):
         fn([])
@@ -54,8 +61,10 @@ def _write(path: Path, text: str) -> Path:
 
 
 def test_cli_on_a_csv(tmp_path, capsys):
-    f = _write(tmp_path / "c.csv", "claim,evidence,label\n"
-               "a,e1,SUPPORTS\na,e2,REFUTES\nb,e3,REFUTES\nb,e4,REFUTES\n")
+    f = _write(
+        tmp_path / "c.csv",
+        "claim,evidence,label\na,e1,SUPPORTS\na,e2,REFUTES\nb,e3,REFUTES\nb,e4,REFUTES\n",
+    )
     assert cli.main([str(f), "--json"]) == 0
     out = json.loads(capsys.readouterr().out)
     assert out["rows"] == 4
@@ -66,9 +75,12 @@ def test_cli_on_a_csv(tmp_path, capsys):
 
 def test_cli_on_jsonl_with_custom_columns_and_unicode(tmp_path, capsys):
     f = tmp_path / "c.jsonl"
-    f.write_text('{"q": "Zürich is in Switzerland", "y": "yes"}\n\n'
-                 '{"q": "Zürich is in Switzerland", "y": "yes"}\n'
-                 '{"q": "東京 is in Japan", "y": "no"}\n', encoding="utf-8")
+    f.write_text(
+        '{"q": "Zürich is in Switzerland", "y": "yes"}\n\n'
+        '{"q": "Zürich is in Switzerland", "y": "yes"}\n'
+        '{"q": "東京 is in Japan", "y": "no"}\n',
+        encoding="utf-8",
+    )
     assert cli.main([str(f), "--claim-col", "q", "--label-col", "y"]) == 0
     assert "claim-only ceiling           1.000" in capsys.readouterr().out
 
@@ -98,8 +110,15 @@ def _run(script: str, env_dir: Path) -> subprocess.CompletedProcess:
     import os
 
     env = {**os.environ, "DOUBT_DATA": str(env_dir), "PYTHONIOENCODING": "utf-8"}
-    return subprocess.run([sys.executable, str(ROOT / script)], capture_output=True,
-                          text=True, encoding="utf-8", env=env, cwd=env_dir, timeout=120)
+    return subprocess.run(
+        [sys.executable, str(ROOT / script)],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        env=env,
+        cwd=env_dir,
+        timeout=120,
+    )
 
 
 @pytest.mark.parametrize("script", ["demo.py", "scripts/measure.py"])
@@ -148,7 +167,7 @@ def test_fetch_resumes_a_part_file_and_renames_on_success(tmp_path, monkeypatch)
     def urlopen(request, timeout):
         start, end = map(int, request.get_header("Range").split("=")[1].split("-"))
         starts.append(start)
-        return _Response(payload[start:end + 1])
+        return _Response(payload[start : end + 1])
 
     monkeypatch.setattr(fetch.urllib.request, "urlopen", urlopen)
     out = tmp_path / "test.parquet"

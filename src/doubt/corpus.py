@@ -35,6 +35,7 @@ def data_dir() -> Path:
     override = os.environ.get("DOUBT_DATA")
     return Path(override).expanduser() if override else DEFAULT_DATA
 
+
 SUPPORTS = "SUPPORTS"
 REFUTES = "REFUTES"
 NOT_ENOUGH_INFO = "NOT ENOUGH INFO"
@@ -136,6 +137,5 @@ def _load(path: str, source: str) -> tuple[Claim, ...]:
 def available() -> dict[str, list[str]]:
     """Which corpora are actually on disk, so a partial download is visible."""
     return {
-        source: [s for s in SPLITS if _path(source, s).exists()]
-        for source in (VITAMINC, FEVER)
+        source: [s for s in SPLITS if _path(source, s).exists()] for source in (VITAMINC, FEVER)
     }

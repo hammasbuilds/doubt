@@ -57,7 +57,9 @@ def _records(path: Path) -> list[dict]:
 
 
 def read_rows(
-    path: str | Path, claim_col: str = "claim", evidence_col: str = "evidence",
+    path: str | Path,
+    claim_col: str = "claim",
+    evidence_col: str = "evidence",
     label_col: str = "label",
 ) -> list[Claim]:
     """Load a file into `Claim` rows, refusing missing or blank claims and labels."""
@@ -77,10 +79,15 @@ def read_rows(
             if required and not value:
                 raise InputError(f"{path}: record {n} has no {col!r} (columns: {sorted(rec)})")
             values[col] = value
-        rows.append(Claim(
-            claim=values[claim_col], evidence=values[evidence_col], label=values[label_col],
-            group=values[claim_col], source=path.name,
-        ))
+        rows.append(
+            Claim(
+                claim=values[claim_col],
+                evidence=values[evidence_col],
+                label=values[label_col],
+                group=values[claim_col],
+                source=path.name,
+            )
+        )
     if not rows:
         raise InputError(f"{path}: no rows")
     return rows
@@ -116,15 +123,18 @@ def _print(name: str, r: dict) -> None:
     print(f"  claim-only ceiling      {r['claim_only_ceiling']:>10.3f}")
     print(f"  leak above floor        {r['leak']:>+10.3f}")
     print(f"  evidence-only ceiling   {r['evidence_only_ceiling']:>10.3f}")
-    print(f"  claim+evidence ceiling  {r['claim_evidence_ceiling']:>10.3f}"
-          f"   ({r['contradictory_rows']:,} rows contradict an identical pair)")
+    print(
+        f"  claim+evidence ceiling  {r['claim_evidence_ceiling']:>10.3f}"
+        f"   ({r['contradictory_rows']:,} rows contradict an identical pair)"
+    )
     print("\n  No predictor that never reads the evidence can score above the")
     print("  claim-only ceiling on these rows.")
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        prog="doubt", description="Exact upper bound on claim-only (evidence-blind) accuracy.",
+        prog="doubt",
+        description="Exact upper bound on claim-only (evidence-blind) accuracy.",
     )
     parser.add_argument("file", nargs="?", help="csv / tsv / jsonl / json / parquet")
     parser.add_argument("--corpus", choices=(corpus.VITAMINC, corpus.FEVER))

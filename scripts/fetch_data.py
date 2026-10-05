@@ -30,8 +30,7 @@ CHUNK = 4_000_000
 
 SOURCES = {
     "vitaminc": (
-        "https://huggingface.co/datasets/tals/vitaminc/"
-        "resolve/refs%2Fconvert%2Fparquet/default",
+        "https://huggingface.co/datasets/tals/vitaminc/resolve/refs%2Fconvert%2Fparquet/default",
         DATA,
     ),
     "fever": (
@@ -116,8 +115,10 @@ def main() -> None:
             print(f"  {name:<10}{split:<11}{rows:>8,}  {'ok' if good else f'EXPECTED {want:,}'}")
 
     if not ok:
-        print("\nThe splits are not the published ones; stop rather than measure "
-              "something else.", file=sys.stderr)
+        print(
+            "\nThe splits are not the published ones; stop rather than measure something else.",
+            file=sys.stderr,
+        )
         raise SystemExit(1)
     print("\nboth corpora ready")
 

@@ -27,10 +27,14 @@ def row(claim: str, evidence: str, label: str) -> Claim:
 
 # Contrastive: each claim seen against evidence that supports and refutes it.
 CONTRASTIVE = [
-    row("Paris has 2.1M people", "2018: 2.1M", S), row("Paris has 2.1M people", "2023: 2.0M", R),
-    row("Oslo is the capital", "Oslo is the capital", S), row("Oslo is the capital", "-", NEI),
-    row("X won in 2020", "X won 2020", S), row("X won in 2020", "Y won 2020", R),
-    row("Rome is in Spain", "Rome is in Italy", R), row("Rome is in Spain", "Rome, Spain", S),
+    row("Paris has 2.1M people", "2018: 2.1M", S),
+    row("Paris has 2.1M people", "2023: 2.0M", R),
+    row("Oslo is the capital", "Oslo is the capital", S),
+    row("Oslo is the capital", "-", NEI),
+    row("X won in 2020", "X won 2020", S),
+    row("X won in 2020", "Y won 2020", R),
+    row("Rome is in Spain", "Rome is in Italy", R),
+    row("Rome is in Spain", "Rome, Spain", S),
 ]
 # Written once per claim: the claim alone determines the label.
 ONE_SHOT = [
@@ -41,8 +45,10 @@ ONE_SHOT = [
 
 def show(name: str, rows) -> None:
     r = report(list(rows))
-    print(f"  {name:<34}{r['rows']:>8,} rows   majority {r['majority']:.3f}"
-          f"   claim-only ceiling {r['claim_only_ceiling']:.3f}   leak {r['leak']:+.3f}")
+    print(
+        f"  {name:<34}{r['rows']:>8,} rows   majority {r['majority']:.3f}"
+        f"   claim-only ceiling {r['claim_only_ceiling']:.3f}   leak {r['leak']:+.3f}"
+    )
 
 
 def main() -> None:
@@ -56,8 +62,9 @@ def main() -> None:
         if "test" in have[source]:
             show(source, corpus.load(source, "test"))
         else:
-            print(f"  {source:<34}not on disk; run `python scripts/fetch_data.py`"
-                  " (or set DOUBT_DATA)")
+            print(
+                f"  {source:<34}not on disk; run `python scripts/fetch_data.py` (or set DOUBT_DATA)"
+            )
 
 
 if __name__ == "__main__":
